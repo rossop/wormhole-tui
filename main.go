@@ -281,11 +281,18 @@ func colorizeRunes(s string, style lipgloss.Style, targets string) string {
 	return b.String()
 }
 
+func jumpLabel(seg segment) string {
+	if !seg.isJump {
+		return ""
+	}
+	return fmt.Sprintf("   jump %d → %d", seg.fromIdx, seg.toIdx)
+}
+
 func renderSegment(s string, seg segment, current bool) string {
 	if !current {
 		lines := []string{"  " + s, "  " + seg.track}
 		if seg.isJump {
-			lines = append(lines, "  "+seg.tunnel, fmt.Sprintf("   jump %d → %d", seg.fromIdx, seg.toIdx))
+			lines = append(lines, "  "+seg.tunnel+jumpLabel(seg))
 		}
 		return mutedBlockStyle.Render(strings.Join(lines, "\n"))
 	}
@@ -299,10 +306,7 @@ func renderSegment(s string, seg segment, current bool) string {
 		"  " + colorizeTrack(seg.track, dirStyle, jumpCharStyle),
 	}
 	if seg.isJump {
-		lines = append(lines,
-			"  "+colorizeRunes(seg.tunnel, jumpCharStyle, "@~"),
-			jumpTagStyle.Render(fmt.Sprintf("   jump %d → %d", seg.fromIdx, seg.toIdx)),
-		)
+		lines = append(lines, "  "+colorizeRunes(seg.tunnel, jumpCharStyle, "@~")+jumpTagStyle.Render(jumpLabel(seg)))
 	}
 	return strings.Join(lines, "\n")
 }
@@ -364,7 +368,8 @@ func (m model) viewInput() string {
 }
 
 func (m model) viewViz() string {
-	width := max(len(m.s)+8, 40)
+	// +18 leaves room for the "   jump X → Y" label appended to the tunnel line.
+	width := max(len(m.s)+18, 44)
 
 	sections := []string{
 		titleStyle.Render("\U0001F573  Wormhole Parentheses Visualizer"),
